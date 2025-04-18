@@ -1,0 +1,67 @@
+# Configurazione principale di BossCore
+# Plugin creato da fliuxx
+
+# Impostazioni generali
+settings:
+  debug-mode: false
+  prefix: "&8[&c&lBoss&f&lCore&8] &r"
+
+# Impostazioni dell'evento
+event:
+  # Durata del countdown in secondi
+  countdown: 15
+
+  # Posizione di spawn del boss
+  location:
+    world: "world"
+    x: 0
+    y: 64
+    z: 0
+
+  # Impostazioni del boss
+  boss:
+    # Numero di hit necessarie per uccidere il boss
+    health: 100
+
+# Premi per i vincitori (comandi eseguiti come console)
+rewards:
+  # Primo posto
+  rank1: "give %player% diamond_block 3"
+  # Secondo posto
+  rank2: "give %player% diamond_block 2"
+  # Terzo posto
+  rank3: "give %player% diamond_block 1"
+
+# Messaggi del plugin
+messages:
+  reload: "&aConfigurazione ricaricata con successo!"
+  no-permission: "&cNon hai il permesso per eseguire questo comando!"
+  player-only: "&cQuesto comando può essere eseguito solo da un giocatore!"
+  location-set: "&aLa posizione di spawn del boss è stata impostata con successo!"
+
+  commands:
+    help: |
+      &8&m----------------------------------------
+      &c&lBoss&f&lCore &7- &fComandi disponibili:
+      &8» &f/bosscore start &7- Avvia l'evento del boss
+      &8» &f/bosscore stop &7- Ferma l'evento del boss
+      &8» &f/bosscore reload &7- Ricarica la configurazione
+      &8» &f/bosscore setlocation &7- Imposta la posizione di spawn
+      &8&m----------------------------------------
+
+  event:
+    starting: "&aAvvio del countdown per l'evento del boss!"
+    countdown-started: "&aPrepararsi! L'evento del boss inizierà tra &e%time% &asecondi!"
+    countdown: "&aL'evento del boss inizierà tra &e%time% &asecondi!"
+    started: "&a&lL'evento del boss è iniziato! Colpisci il boss più volte per vincere!"
+    ended: "&c&lL'evento del boss è terminato!"
+    stopped: "&cL'evento del boss è stato interrotto manualmente."
+    countdown-stopped: "&cIl countdown è stato interrotto manualmente."
+    countdown-cancelled: "&cIl countdown per l'evento del boss è stato annullato."
+    already-running: "&cL'evento del boss è già in corso!"
+    already-starting: "&cIl countdown per l'evento del boss è già in corso!"
+    not-running: "&cNessun evento del boss in corso!"
+    winner: "&a&lIl vincitore dell'evento è &e%player% &a&lcon &e%hits% &a&lcolpi!"
+
+  rewards:
+    received: "&aHai ricevuto il premio per esserti classificato &e#%rank%&a!"

@@ -1,0 +1,10 @@
+name: BossCore
+version: 1.0
+main: net.fliuxx.bossCore.BossCore
+api-version: 1.8
+author: fliuxx
+description: Plugin core con funzionalità avanzate
+commands:
+  bosscore:
+    description: Comando principale di BossCore
+    usage: /<command> [reload|help]
