@@ -23,6 +23,9 @@ public class BossCore extends JavaPlugin {
         getLogger().info("BossCore è stato abilitato!");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[BossCore] Plugin abilitato con successo!");
 
+        // Carica la configurazione prima di inizializzare i manager
+        loadConfig();
+
         // Inizializza i manager
         this.scoreboardManager = new ScoreboardManager(this);
         this.bossEvent = new BossEvent(this);
@@ -30,16 +33,15 @@ public class BossCore extends JavaPlugin {
         // Registra i comandi e gli eventi
         registerCommands();
         registerEvents();
-
-        // Carica la configurazione
-        loadConfig();
     }
 
     @Override
     public void onDisable() {
         // Se l'evento è in corso, terminalo
         if (bossEvent.isRunning()) {
-            bossEvent.stopEvent();
+            bossEvent.stopEvent(true); // Stop forzato senza premi
+        } else if (bossEvent.isStarting()) {
+            bossEvent.cancelCountdown();
         }
 
         // Plugin shutdown logic
@@ -63,6 +65,60 @@ public class BossCore extends JavaPlugin {
     private void loadConfig() {
         // Crea la configurazione predefinita se non esiste
         saveDefaultConfig();
+
+        // Aggiungi valori di default per le scoreboard se non esistono
+        if (!getConfig().isSet("scoreboard.event.lines")) {
+            getConfig().set("scoreboard.event.enabled", true);
+            getConfig().set("scoreboard.event.title", "&c&lBoss&f&lEvent");
+            getConfig().createSection("scoreboard.event.lines");
+            getConfig().getStringList("scoreboard.event.lines").add("&eVita Boss: &a%health%");
+            getConfig().getStringList("scoreboard.event.lines").add("&7");
+            getConfig().getStringList("scoreboard.event.lines").add("&6TOP GIOCATORI:");
+            getConfig().getStringList("scoreboard.event.lines").add("&f#1: %player1% &7- &e%hits1%");
+            getConfig().getStringList("scoreboard.event.lines").add("&f#2: %player2% &7- &e%hits2%");
+            getConfig().getStringList("scoreboard.event.lines").add("&f#3: %player3% &7- &e%hits3%");
+            getConfig().getStringList("scoreboard.event.lines").add("&7");
+            getConfig().getStringList("scoreboard.event.lines").add("&fServer: &e%server%");
+        }
+
+        if (!getConfig().isSet("scoreboard.countdown.lines")) {
+            getConfig().set("scoreboard.countdown.enabled", true);
+            getConfig().set("scoreboard.countdown.title", "&c&lBoss&f&lEvent &7- &fCountdown");
+            getConfig().createSection("scoreboard.countdown.lines");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&7");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&eEvento inizia in: &a%time%s");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&7");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&fPremi:");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&f#1: &6%reward1%");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&f#2: &6%reward2%");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&f#3: &6%reward3%");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&7");
+            getConfig().getStringList("scoreboard.countdown.lines").add("&fServer: &e%server%");
+        }
+
+        if (!getConfig().isSet("rewards.desc.rank1")) {
+            getConfig().set("rewards.desc.rank1", "3x Diamond Block");
+            getConfig().set("rewards.desc.rank2", "2x Diamond Block");
+            getConfig().set("rewards.desc.rank3", "1x Diamond Block");
+        }
+
+        if (!getConfig().isSet("messages.event.ranking")) {
+            getConfig().set("messages.event.ranking",
+                    "&8&m----------------------------------------\n" +
+                            "&c&lBoss&f&lEvent &7- &fClassifica Finale:\n" +
+                            "&f#1: %player1% &7- &e%hits1% colpi\n" +
+                            "&f#2: %player2% &7- &e%hits2% colpi\n" +
+                            "&f#3: %player3% &7- &e%hits3% colpi\n" +
+                            "&8&m----------------------------------------"
+            );
+        }
+
+        if (!getConfig().isSet("messages.event.no-players")) {
+            getConfig().set("messages.event.no-players", "&c&lL'evento è stato terminato perché non ci sono più giocatori online!");
+        }
+
+        // Salva le impostazioni predefinite
+        saveConfig();
 
         // Carica la configurazione
         reloadConfig();

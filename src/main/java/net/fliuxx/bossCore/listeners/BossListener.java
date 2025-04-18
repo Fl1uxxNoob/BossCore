@@ -9,6 +9,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -46,8 +47,24 @@ public class BossListener implements Listener {
 
         // Se il boss muore (anche se non dovrebbe mai succedere grazie al nostro sistema)
         if (entity instanceof IronGolem && entity.hasMetadata("bossevent") && plugin.getBossEvent().isRunning()) {
+            // Rimuovi i drop
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+
             // Ferma l'evento
             plugin.getBossEvent().stopEvent();
+        }
+    }
+
+    @EventHandler
+    public void onEntityTarget(EntityTargetEvent event) {
+        Entity entity = event.getEntity();
+
+        // Se è il boss dell'evento e non può attaccare (secondo la config)
+        if (entity instanceof IronGolem && entity.hasMetadata("bossevent") &&
+                !plugin.getConfig().getBoolean("event.boss.can-attack", false)) {
+            // Cancella il targeting
+            event.setCancelled(true);
         }
     }
 
@@ -57,12 +74,21 @@ public class BossListener implements Listener {
 
         // Se l'evento è in corso, mostra la scoreboard
         if (plugin.getBossEvent().isRunning()) {
-            plugin.getScoreboardManager().showScoreboard(player);
+            plugin.getScoreboardManager().showEventScoreboard(player);
+        } else if (plugin.getBossEvent().isStarting()) {
+            // Se è in corso il countdown, mostra la scoreboard di countdown
+            int remainingTime = plugin.getConfig().getInt("event.countdown", 15);
+            plugin.getScoreboardManager().showCountdownScoreboard(player, remainingTime);
         }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // Non c'è bisogno di rimuovere la scoreboard poiché il giocatore sta uscendo
+        Player player = event.getPlayer();
+
+        // Se un giocatore esce durante l'evento, rimuovilo dalla classifica
+        if (plugin.getBossEvent().isRunning()) {
+            plugin.getBossEvent().removePlayerFromRanking(player.getUniqueId());
+        }
     }
 }

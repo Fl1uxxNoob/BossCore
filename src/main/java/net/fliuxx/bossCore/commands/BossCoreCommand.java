@@ -58,7 +58,8 @@ public class BossCoreCommand implements CommandExecutor {
                     return true;
                 }
 
-                plugin.getBossEvent().stopEvent();
+                // Stoppa l'evento con il flag di stop forzato
+                plugin.getBossEvent().stopEvent(true);
                 sender.sendMessage(plugin.getMessage("event.stopped"));
                 return true;
 

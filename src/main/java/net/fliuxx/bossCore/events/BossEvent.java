@@ -24,6 +24,7 @@ public class BossEvent {
     private boolean isRunning = false;
     private boolean isStarting = false;
     private BukkitTask countdownTask;
+    private BukkitTask checkPlayersTask;
     private IronGolem boss;
     private int bossHealth;
     private final Map<UUID, Integer> playerHits;
@@ -45,6 +46,11 @@ public class BossEvent {
         Bukkit.broadcastMessage(plugin.getMessage("event.countdown-started")
                 .replace("%time%", String.valueOf(countdown)));
 
+        // Mostra la scoreboard del countdown a tutti i giocatori
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            plugin.getScoreboardManager().showCountdownScoreboard(player, countdown);
+        }
+
         countdownTask = new BukkitRunnable() {
             int timeLeft = countdown;
 
@@ -55,6 +61,9 @@ public class BossEvent {
                     cancel();
                     return;
                 }
+
+                // Aggiorna la scoreboard del countdown
+                plugin.getScoreboardManager().updateCountdownScoreboard(timeLeft);
 
                 if (timeLeft <= 5 || timeLeft == 10 || timeLeft == 15 || timeLeft == 30 || timeLeft == 60) {
                     Bukkit.broadcastMessage(plugin.getMessage("event.countdown")
@@ -100,20 +109,25 @@ public class BossEvent {
         boss.setCustomNameVisible(true);
         boss.setMetadata("bossevent", new FixedMetadataValue(plugin, true));
 
-        // Disabilita il movimento del boss con effetti di pozione invece di setAI
+        // Disabilita il movimento e l'attacco del boss
         boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 100, false, false));
         boss.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 128, false, false));
 
         // Annuncia l'inizio dell'evento
         Bukkit.broadcastMessage(plugin.getMessage("event.started"));
 
-        // Mostra la scoreboard a tutti i giocatori
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            plugin.getScoreboardManager().showScoreboard(player);
-        }
+        // Cambia la scoreboard per tutti i giocatori
+        plugin.getScoreboardManager().switchToEventScoreboard();
+
+        // Avvia il task per controllare se ci sono ancora giocatori online
+        startCheckPlayersTask();
     }
 
     public void stopEvent() {
+        stopEvent(false);
+    }
+
+    public void stopEvent(boolean forcedStop) {
         if (!isRunning) {
             return;
         }
@@ -124,18 +138,27 @@ public class BossEvent {
             boss = null;
         }
 
+        // Ferma il task di controllo dei giocatori
+        if (checkPlayersTask != null) {
+            checkPlayersTask.cancel();
+            checkPlayersTask = null;
+        }
+
         isRunning = false;
 
         // Annuncia la fine dell'evento
         Bukkit.broadcastMessage(plugin.getMessage("event.ended"));
 
-        // Distribuisci i premi
-        distributeRewards();
+        // Mostra la classifica finale solo se non è uno stop forzato
+        if (!forcedStop && !playerHits.isEmpty()) {
+            Bukkit.broadcastMessage(plugin.getScoreboardManager().getFormattedRanking());
+
+            // Distribuisci i premi solo se non è uno stop forzato
+            distributeRewards();
+        }
 
         // Rimuovi le scoreboard
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            plugin.getScoreboardManager().removeScoreboard(player);
-        }
+        plugin.getScoreboardManager().removeAllScoreboards();
 
         // Pulisci i dati
         playerHits.clear();
@@ -147,6 +170,9 @@ public class BossEvent {
             countdownTask = null;
         }
         isStarting = false;
+
+        // Rimuovi le scoreboard del countdown
+        plugin.getScoreboardManager().removeAllScoreboards();
 
         Bukkit.broadcastMessage(plugin.getMessage("event.countdown-cancelled"));
     }
@@ -169,7 +195,7 @@ public class BossEvent {
                 + ChatColor.YELLOW + "Vita: " + ChatColor.GREEN + bossHealth);
 
         // Aggiorna la scoreboard
-        plugin.getScoreboardManager().updateScoreboard();
+        plugin.getScoreboardManager().updateEventScoreboard();
 
         // Controlla se il boss è morto
         if (bossHealth <= 0) {
@@ -218,6 +244,29 @@ public class BossEvent {
         }
 
         return rank;
+    }
+
+    private void startCheckPlayersTask() {
+        checkPlayersTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Se non ci sono giocatori online, termina l'evento
+                if (Bukkit.getOnlinePlayers().isEmpty()) {
+                    Bukkit.broadcastMessage(plugin.getMessage("event.no-players"));
+                    stopEvent(true); // Termina forzatamente
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 20, 20); // Controlla ogni secondo
+    }
+
+    public void removePlayerFromRanking(UUID playerUUID) {
+        playerHits.remove(playerUUID);
+
+        // Se l'evento è in corso, aggiorna la scoreboard
+        if (isRunning) {
+            plugin.getScoreboardManager().updateEventScoreboard();
+        }
     }
 
     public boolean isRunning() {

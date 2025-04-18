@@ -12,88 +12,201 @@ import java.util.stream.Collectors;
 public class ScoreboardManager {
 
     private final BossCore plugin;
+    private final Map<UUID, ScoreboardType> playerScoreboards;
+
+    public enum ScoreboardType {
+        EVENT,
+        COUNTDOWN,
+        NONE
+    }
 
     public ScoreboardManager(BossCore plugin) {
         this.plugin = plugin;
+        this.playerScoreboards = new HashMap<>();
     }
 
-    public void showScoreboard(Player player) {
-        // Cambiato il modo in cui otteniamo l'oggetto scoreboard
+    public void showEventScoreboard(Player player) {
+        if (!plugin.getConfig().getBoolean("scoreboard.event.enabled", true)) {
+            return;
+        }
+
         org.bukkit.scoreboard.ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
         Scoreboard scoreboard = bukkitManager.getNewScoreboard();
 
-        // In Spigot 1.8.9 registerNewObjective() accetta solo 2 parametri
         Objective objective = scoreboard.registerNewObjective("bossevent", "dummy");
-        objective.setDisplayName(ChatColor.RED + "" + ChatColor.BOLD + "Boss" + ChatColor.WHITE + "" + ChatColor.BOLD + "Event");
+        objective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                plugin.getConfig().getString("scoreboard.event.title", "&c&lBossEvent")));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Placeholder scores
-        objective.getScore(ChatColor.YELLOW + "Boss HP: " + ChatColor.GREEN + plugin.getBossEvent().getBossHealth()).setScore(15);
-        objective.getScore(" ").setScore(14);
-        objective.getScore(ChatColor.GOLD + "TOP HITTERS:").setScore(13);
-        objective.getScore("  ").setScore(9);
-        objective.getScore(ChatColor.GRAY + "Server: " + ChatColor.WHITE + Bukkit.getServerName()).setScore(8);
+        // Creazione della scoreboard dall'elenco di righe nella config
+        List<String> lines = plugin.getConfig().getStringList("scoreboard.event.lines");
+        int scoreValue = lines.size();
+
+        for (String line : lines) {
+            // Sostituisci i placeholder
+            line = replacePlaceholders(line, ScoreboardType.EVENT);
+            String entry = ChatColor.translateAlternateColorCodes('&', line);
+
+            // Evitare entries duplicate
+            while (scoreboard.getEntries().contains(entry)) {
+                entry = entry + "§r";
+            }
+
+            // NUOVA LOGICA: tronca a 40 caratteri
+            if (entry.length() > 40) {
+                entry = entry.substring(0, 40);
+            }
+
+            objective.getScore(entry).setScore(scoreValue--);
+        }
 
         player.setScoreboard(scoreboard);
+        playerScoreboards.put(player.getUniqueId(), ScoreboardType.EVENT);
     }
 
-    public void updateScoreboard() {
-        Map<UUID, Integer> playerHits = plugin.getBossEvent().getPlayerHits();
+    public void showCountdownScoreboard(Player player, int timeLeft) {
+        if (!plugin.getConfig().getBoolean("scoreboard.countdown.enabled", true)) {
+            return;
+        }
 
-        // Ottieni i top 3 players
-        List<Map.Entry<UUID, Integer>> topPlayers = playerHits.entrySet().stream()
-                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
-                .limit(3)
-                .collect(Collectors.toList());
+        org.bukkit.scoreboard.ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
+        Scoreboard scoreboard = bukkitManager.getNewScoreboard();
 
+        Objective objective = scoreboard.registerNewObjective("bosscountdown", "dummy");
+        objective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                plugin.getConfig().getString("scoreboard.countdown.title", "&c&lBossEvent &7- &fCountdown")));
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        // Creazione della scoreboard dall'elenco di righe nella config
+        List<String> lines = plugin.getConfig().getStringList("scoreboard.countdown.lines");
+        int scoreValue = lines.size();
+
+        for (String line : lines) {
+            // Sostituisci i placeholder incluso il tempo rimanente
+            line = line.replace("%time%", String.valueOf(timeLeft));
+            line = replacePlaceholders(line, ScoreboardType.COUNTDOWN);
+            String entry = ChatColor.translateAlternateColorCodes('&', line);
+
+            // Evitare entries duplicate
+            while (scoreboard.getEntries().contains(entry)) {
+                entry = entry + "§r";
+            }
+
+            // NUOVA LOGICA: tronca a 40 caratteri
+            if (entry.length() > 40) {
+                entry = entry.substring(0, 40);
+            }
+
+            objective.getScore(entry).setScore(scoreValue--);
+        }
+
+        player.setScoreboard(scoreboard);
+        playerScoreboards.put(player.getUniqueId(), ScoreboardType.COUNTDOWN);
+    }
+
+    private String replacePlaceholders(String line, ScoreboardType type) {
+        // Placeholders comuni
+        line = line.replace("%server%", Bukkit.getServerName());
+
+        // Reward descriptions
+        line = line.replace("%reward1%", plugin.getConfig().getString("rewards.desc.rank1", "3x Diamond Block"));
+        line = line.replace("%reward2%", plugin.getConfig().getString("rewards.desc.rank2", "2x Diamond Block"));
+        line = line.replace("%reward3%", plugin.getConfig().getString("rewards.desc.rank3", "1x Diamond Block"));
+
+        if (type == ScoreboardType.EVENT) {
+            // Placeholders specifici dell'evento
+            line = line.replace("%health%", String.valueOf(plugin.getBossEvent().getBossHealth()));
+
+            // Top player placeholders
+            Map<UUID, Integer> playerHits = plugin.getBossEvent().getPlayerHits();
+            List<Map.Entry<UUID, Integer>> topPlayers = playerHits.entrySet().stream()
+                    .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                    .limit(3)
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < 3; i++) {
+                String playerName = "Nessuno";
+                String hits = "0";
+
+                if (i < topPlayers.size()) {
+                    Map.Entry<UUID, Integer> entry = topPlayers.get(i);
+                    String name = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+                    playerName = (name != null) ? name : "Unknown";
+                    hits = String.valueOf(entry.getValue());
+                }
+
+                line = line.replace("%player" + (i+1) + "%", playerName);
+                line = line.replace("%hits" + (i+1) + "%", hits);
+            }
+        }
+
+        return line;
+    }
+
+    public void updateEventScoreboard() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Scoreboard scoreboard = player.getScoreboard();
-
-            if (scoreboard == null || scoreboard.getObjective("bossevent") == null) {
-                showScoreboard(player);
-                scoreboard = player.getScoreboard();
+            UUID uuid = player.getUniqueId();
+            if (playerScoreboards.getOrDefault(uuid, ScoreboardType.NONE) == ScoreboardType.EVENT) {
+                showEventScoreboard(player);
             }
+        }
+    }
 
-            Objective objective = scoreboard.getObjective("bossevent");
-
-            // Aggiorna la vita del boss
-            for (String entry : new ArrayList<>(scoreboard.getEntries())) {
-                if (entry.startsWith(ChatColor.YELLOW + "Boss HP: ")) {
-                    scoreboard.resetScores(entry);
-                }
-            }
-            objective.getScore(ChatColor.YELLOW + "Boss HP: " + ChatColor.GREEN + plugin.getBossEvent().getBossHealth()).setScore(15);
-
-            // Rimuovi i vecchi punteggi
-            for (String entry : new ArrayList<>(scoreboard.getEntries())) {
-                if (entry.startsWith(ChatColor.GOLD + "#") ||
-                        entry.equals("   ") ||
-                        entry.equals("    ") ||
-                        entry.equals("     ")) {
-                    scoreboard.resetScores(entry);
-                }
-            }
-
-            // Aggiungi i nuovi punteggi
-            int score = 12;
-            for (int i = 0; i < topPlayers.size(); i++) {
-                Map.Entry<UUID, Integer> entry = topPlayers.get(i);
-                String playerName = Bukkit.getOfflinePlayer(entry.getKey()).getName();
-                if (playerName == null) playerName = "Unknown";
-
-                objective.getScore(ChatColor.GOLD + "#" + (i + 1) + " " +
-                        ChatColor.WHITE + playerName + ": " +
-                        ChatColor.YELLOW + entry.getValue()).setScore(score--);
-            }
-
-            // Riempi i posti vuoti
-            for (int i = topPlayers.size(); i < 3; i++) {
-                objective.getScore(ChatColor.GOLD + "#" + (i + 1) + " " + ChatColor.GRAY + "Nessuno").setScore(score--);
+    public void updateCountdownScoreboard(int timeLeft) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
+            if (playerScoreboards.getOrDefault(uuid, ScoreboardType.NONE) == ScoreboardType.COUNTDOWN) {
+                showCountdownScoreboard(player, timeLeft);
             }
         }
     }
 
     public void removeScoreboard(Player player) {
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+        playerScoreboards.remove(player.getUniqueId());
+    }
+
+    public void removeAllScoreboards() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            removeScoreboard(player);
+        }
+        playerScoreboards.clear();
+    }
+
+    public ScoreboardType getPlayerScoreboardType(UUID uuid) {
+        return playerScoreboards.getOrDefault(uuid, ScoreboardType.NONE);
+    }
+
+    public void switchToEventScoreboard() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            showEventScoreboard(player);
+        }
+    }
+
+    public String getFormattedRanking() {
+        Map<UUID, Integer> playerHits = plugin.getBossEvent().getPlayerHits();
+        List<Map.Entry<UUID, Integer>> topPlayers = playerHits.entrySet().stream()
+                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                .limit(3)
+                .collect(Collectors.toList());
+
+        String ranking = plugin.getMessage("event.ranking");
+
+        for (int i = 0; i < 3; i++) {
+            String playerName = "Nessuno";
+            String hits = "0";
+
+            if (i < topPlayers.size()) {
+                Map.Entry<UUID, Integer> entry = topPlayers.get(i);
+                String name = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+                playerName = (name != null) ? name : "Unknown";
+                hits = String.valueOf(entry.getValue());
+            }
+
+            ranking = ranking.replace("%player" + (i+1) + "%", playerName);
+            ranking = ranking.replace("%hits" + (i+1) + "%", hits);
+        }
+
+        return ranking;
     }
 }
