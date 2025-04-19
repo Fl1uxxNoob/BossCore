@@ -1,10 +1,14 @@
 name: BossCore
-version: 1.0
+version: 1.2
 main: net.fliuxx.bossCore.BossCore
 api-version: 1.8
-author: fliuxx
-description: Plugin core con funzionalità avanzate
+author: Fl1uxxNoob
+description: Vince chi colpisce più volte il boss!
 commands:
   bosscore:
     description: Comando principale di BossCore
-    usage: /<command> [reload|help]
+    usage: /<command> [start|stop|setlocation|reload|help]
+permissions:
+  bosscore.admin:
+    description: Permette di utilizzare tutti i comandi di BossCore
+    default: op

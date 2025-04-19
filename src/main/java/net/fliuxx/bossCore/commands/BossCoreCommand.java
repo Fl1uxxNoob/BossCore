@@ -1,6 +1,7 @@
 package net.fliuxx.bossCore.commands;
 
 import net.fliuxx.bossCore.BossCore;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -58,7 +59,6 @@ public class BossCoreCommand implements CommandExecutor {
                     return true;
                 }
 
-                // Stoppa l'evento con il flag di stop forzato
                 plugin.getBossEvent().stopEvent(true);
                 sender.sendMessage(plugin.getMessage("event.stopped"));
                 return true;
@@ -92,6 +92,13 @@ public class BossCoreCommand implements CommandExecutor {
                 plugin.saveConfig();
 
                 sender.sendMessage(plugin.getMessage("location-set"));
+                return true;
+
+            case "credits":
+                // Nessun permesso richiesto per vedere i credits
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8&m----------------------------------------"));
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&c&lBoss&f&lCore &7developed by &b&lFl1uxxNoob"));
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&8&m----------------------------------------"));
                 return true;
 
             default:

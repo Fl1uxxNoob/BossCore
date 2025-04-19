@@ -16,57 +16,45 @@ public class BossCore extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Salva l'istanza per accesso statico
         instance = this;
 
-        // Plugin startup logic
         getLogger().info("BossCore è stato abilitato!");
         Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "[BossCore] Plugin abilitato con successo!");
 
-        // Carica la configurazione prima di inizializzare i manager
         loadConfig();
 
-        // Inizializza i manager
         this.scoreboardManager = new ScoreboardManager(this);
         this.bossEvent = new BossEvent(this);
 
-        // Registra i comandi e gli eventi
         registerCommands();
         registerEvents();
     }
 
     @Override
     public void onDisable() {
-        // Se l'evento è in corso, terminalo
         if (bossEvent.isRunning()) {
             bossEvent.stopEvent(true); // Stop forzato senza premi
         } else if (bossEvent.isStarting()) {
             bossEvent.cancelCountdown();
         }
 
-        // Plugin shutdown logic
         getLogger().info("BossCore è stato disabilitato!");
         Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[BossCore] Plugin disabilitato!");
 
-        // Annulla il riferimento all'istanza
         instance = null;
     }
 
     private void registerCommands() {
-        // Registra il comando principale
         getCommand("bosscore").setExecutor(new BossCoreCommand(this));
     }
 
     private void registerEvents() {
-        // Registra il listener per il boss
         Bukkit.getPluginManager().registerEvents(new BossListener(this), this);
     }
 
     private void loadConfig() {
-        // Crea la configurazione predefinita se non esiste
         saveDefaultConfig();
 
-        // Aggiungi valori di default per le scoreboard se non esistono
         if (!getConfig().isSet("scoreboard.event.lines")) {
             getConfig().set("scoreboard.event.enabled", true);
             getConfig().set("scoreboard.event.title", "&c&lBoss&f&lEvent");
@@ -117,14 +105,10 @@ public class BossCore extends JavaPlugin {
             getConfig().set("messages.event.no-players", "&c&lL'evento è stato terminato perché non ci sono più giocatori online!");
         }
 
-        // Salva le impostazioni predefinite
         saveConfig();
-
-        // Carica la configurazione
         reloadConfig();
     }
 
-    // Getter per accesso agli oggetti principali
     public static BossCore getInstance() {
         return instance;
     }
@@ -137,12 +121,10 @@ public class BossCore extends JavaPlugin {
         return scoreboardManager;
     }
 
-    // Metodo di utilità per colorare le stringhe
     public static String colorize(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 
-    // Metodo per ottenere un messaggio dalla config
     public String getMessage(String path) {
         String prefix = getConfig().getString("settings.prefix", "&8[&c&lBoss&f&lCore&8] &r");
         String message = getConfig().getString("messages." + path, "&cMessaggio non trovato: " + path);

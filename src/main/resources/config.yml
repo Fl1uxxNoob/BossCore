@@ -1,5 +1,5 @@
 # Configurazione principale di BossCore
-# Plugin creato da fliuxx
+# Plugin creato da Fl1uxxNoob
 
 # Impostazioni generali
 settings:
@@ -82,6 +82,7 @@ messages:
       &8» &f/bosscore stop &7- Ferma l'evento del boss
       &8» &f/bosscore reload &7- Ricarica la configurazione
       &8» &f/bosscore setlocation &7- Imposta la posizione di spawn
+      &8» &f/bosscore credits &7- Mostra i crediti del plugin
       &8&m----------------------------------------
 
   event:

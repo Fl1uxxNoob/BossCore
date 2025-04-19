@@ -38,21 +38,17 @@ public class ScoreboardManager {
                 plugin.getConfig().getString("scoreboard.event.title", "&c&lBossEvent")));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Creazione della scoreboard dall'elenco di righe nella config
         List<String> lines = plugin.getConfig().getStringList("scoreboard.event.lines");
         int scoreValue = lines.size();
 
         for (String line : lines) {
-            // Sostituisci i placeholder
             line = replacePlaceholders(line, ScoreboardType.EVENT);
             String entry = ChatColor.translateAlternateColorCodes('&', line);
 
-            // Evitare entries duplicate
             while (scoreboard.getEntries().contains(entry)) {
                 entry = entry + "§r";
             }
 
-            // NUOVA LOGICA: tronca a 40 caratteri
             if (entry.length() > 40) {
                 entry = entry.substring(0, 40);
             }
@@ -77,22 +73,18 @@ public class ScoreboardManager {
                 plugin.getConfig().getString("scoreboard.countdown.title", "&c&lBossEvent &7- &fCountdown")));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Creazione della scoreboard dall'elenco di righe nella config
         List<String> lines = plugin.getConfig().getStringList("scoreboard.countdown.lines");
         int scoreValue = lines.size();
 
         for (String line : lines) {
-            // Sostituisci i placeholder incluso il tempo rimanente
             line = line.replace("%time%", String.valueOf(timeLeft));
             line = replacePlaceholders(line, ScoreboardType.COUNTDOWN);
             String entry = ChatColor.translateAlternateColorCodes('&', line);
 
-            // Evitare entries duplicate
             while (scoreboard.getEntries().contains(entry)) {
                 entry = entry + "§r";
             }
 
-            // NUOVA LOGICA: tronca a 40 caratteri
             if (entry.length() > 40) {
                 entry = entry.substring(0, 40);
             }
@@ -105,19 +97,15 @@ public class ScoreboardManager {
     }
 
     private String replacePlaceholders(String line, ScoreboardType type) {
-        // Placeholders comuni
         line = line.replace("%server%", Bukkit.getServerName());
 
-        // Reward descriptions
         line = line.replace("%reward1%", plugin.getConfig().getString("rewards.desc.rank1", "3x Diamond Block"));
         line = line.replace("%reward2%", plugin.getConfig().getString("rewards.desc.rank2", "2x Diamond Block"));
         line = line.replace("%reward3%", plugin.getConfig().getString("rewards.desc.rank3", "1x Diamond Block"));
 
         if (type == ScoreboardType.EVENT) {
-            // Placeholders specifici dell'evento
             line = line.replace("%health%", String.valueOf(plugin.getBossEvent().getBossHealth()));
 
-            // Top player placeholders
             Map<UUID, Integer> playerHits = plugin.getBossEvent().getPlayerHits();
             List<Map.Entry<UUID, Integer>> topPlayers = playerHits.entrySet().stream()
                     .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())

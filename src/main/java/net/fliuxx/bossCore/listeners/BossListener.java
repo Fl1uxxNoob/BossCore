@@ -26,16 +26,12 @@ public class BossListener implements Listener {
         Entity damaged = event.getEntity();
         Entity damager = event.getDamager();
 
-        // Controlla se l'entità danneggiata è il boss
         if (damaged instanceof IronGolem && damaged.hasMetadata("bossevent") && plugin.getBossEvent().isRunning()) {
-            // Controlla se il danno proviene da un giocatore
             if (damager instanceof Player) {
                 Player player = (Player) damager;
 
-                // Registra l'hit
                 plugin.getBossEvent().registerHit(player);
 
-                // Previeni il danno reale (useremo il nostro sistema di vita)
                 event.setDamage(0);
             }
         }
@@ -45,13 +41,10 @@ public class BossListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         Entity entity = event.getEntity();
 
-        // Se il boss muore (anche se non dovrebbe mai succedere grazie al nostro sistema)
         if (entity instanceof IronGolem && entity.hasMetadata("bossevent") && plugin.getBossEvent().isRunning()) {
-            // Rimuovi i drop
             event.getDrops().clear();
             event.setDroppedExp(0);
 
-            // Ferma l'evento
             plugin.getBossEvent().stopEvent();
         }
     }
@@ -60,10 +53,8 @@ public class BossListener implements Listener {
     public void onEntityTarget(EntityTargetEvent event) {
         Entity entity = event.getEntity();
 
-        // Se è il boss dell'evento e non può attaccare (secondo la config)
         if (entity instanceof IronGolem && entity.hasMetadata("bossevent") &&
                 !plugin.getConfig().getBoolean("event.boss.can-attack", false)) {
-            // Cancella il targeting
             event.setCancelled(true);
         }
     }
@@ -72,11 +63,9 @@ public class BossListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // Se l'evento è in corso, mostra la scoreboard
         if (plugin.getBossEvent().isRunning()) {
             plugin.getScoreboardManager().showEventScoreboard(player);
         } else if (plugin.getBossEvent().isStarting()) {
-            // Se è in corso il countdown, mostra la scoreboard di countdown
             int remainingTime = plugin.getConfig().getInt("event.countdown", 15);
             plugin.getScoreboardManager().showCountdownScoreboard(player, remainingTime);
         }
@@ -86,7 +75,6 @@ public class BossListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        // Se un giocatore esce durante l'evento, rimuovilo dalla classifica
         if (plugin.getBossEvent().isRunning()) {
             plugin.getBossEvent().removePlayerFromRanking(player.getUniqueId());
         }
