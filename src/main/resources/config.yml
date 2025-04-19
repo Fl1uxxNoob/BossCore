@@ -28,7 +28,7 @@ scoreboard:
   # Configurazione della scoreboard del countdown
   countdown:
     enabled: true
-    title: "&c&lBoss&f&lEvent &7- &fCountdown"
+    title: "&c&lBoss&f&lEvent"
     lines:
       - "&7"
       - "&eEvento inizia in: &a%time%s"
@@ -45,6 +45,8 @@ scoreboard:
     title: "&c&lBoss&f&lEvent"
     lines:
       - "&eVita Boss: &a%health%"
+      - "&7"
+      - "&aI tuoi colpi: &e%yourhits%"
       - "&7"
       - "&6TOP GIOCATORI:"
       - "&f#1: %player1% &7- &e%hits1%"

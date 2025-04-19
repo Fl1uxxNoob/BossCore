@@ -42,7 +42,7 @@ public class ScoreboardManager {
         int scoreValue = lines.size();
 
         for (String line : lines) {
-            line = replacePlaceholders(line, ScoreboardType.EVENT);
+            line = replacePlaceholders(line, ScoreboardType.EVENT, player);
             String entry = ChatColor.translateAlternateColorCodes('&', line);
 
             while (scoreboard.getEntries().contains(entry)) {
@@ -78,7 +78,7 @@ public class ScoreboardManager {
 
         for (String line : lines) {
             line = line.replace("%time%", String.valueOf(timeLeft));
-            line = replacePlaceholders(line, ScoreboardType.COUNTDOWN);
+            line = replacePlaceholders(line, ScoreboardType.COUNTDOWN, player); // Aggiunto player
             String entry = ChatColor.translateAlternateColorCodes('&', line);
 
             while (scoreboard.getEntries().contains(entry)) {
@@ -96,7 +96,7 @@ public class ScoreboardManager {
         playerScoreboards.put(player.getUniqueId(), ScoreboardType.COUNTDOWN);
     }
 
-    private String replacePlaceholders(String line, ScoreboardType type) {
+    private String replacePlaceholders(String line, ScoreboardType type, Player player) {
         line = line.replace("%server%", Bukkit.getServerName());
 
         line = line.replace("%reward1%", plugin.getConfig().getString("rewards.desc.rank1", "3x Diamond Block"));
@@ -125,6 +125,13 @@ public class ScoreboardManager {
 
                 line = line.replace("%player" + (i+1) + "%", playerName);
                 line = line.replace("%hits" + (i+1) + "%", hits);
+            }
+
+            if (player != null && line.contains("%yourhits%")) {
+                int hits = playerHits.getOrDefault(player.getUniqueId(), 0);
+                line = line.replace("%yourhits%", String.valueOf(hits));
+            } else {
+                line = line.replace("%yourhits%", "0");
             }
         }
 

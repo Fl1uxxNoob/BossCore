@@ -61,6 +61,8 @@ public class BossCore extends JavaPlugin {
             getConfig().createSection("scoreboard.event.lines");
             getConfig().getStringList("scoreboard.event.lines").add("&eVita Boss: &a%health%");
             getConfig().getStringList("scoreboard.event.lines").add("&7");
+            getConfig().getStringList("scoreboard.event.lines").add("&aI tuoi colpi: &e%yourhits%");  // Nuova riga
+            getConfig().getStringList("scoreboard.event.lines").add("&7");
             getConfig().getStringList("scoreboard.event.lines").add("&6TOP GIOCATORI:");
             getConfig().getStringList("scoreboard.event.lines").add("&f#1: %player1% &7- &e%hits1%");
             getConfig().getStringList("scoreboard.event.lines").add("&f#2: %player2% &7- &e%hits2%");
@@ -71,7 +73,7 @@ public class BossCore extends JavaPlugin {
 
         if (!getConfig().isSet("scoreboard.countdown.lines")) {
             getConfig().set("scoreboard.countdown.enabled", true);
-            getConfig().set("scoreboard.countdown.title", "&c&lBoss&f&lEvent &7- &fCountdown");
+            getConfig().set("scoreboard.countdown.title", "&c&lBoss&f&lEvent");
             getConfig().createSection("scoreboard.countdown.lines");
             getConfig().getStringList("scoreboard.countdown.lines").add("&7");
             getConfig().getStringList("scoreboard.countdown.lines").add("&eEvento inizia in: &a%time%s");
