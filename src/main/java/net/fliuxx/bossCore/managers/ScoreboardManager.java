@@ -115,12 +115,12 @@ public class ScoreboardManager {
         ScoreboardManager board = getByPlayer(player);
         if (board == null) {
             board = createScore(player);
+        } else {
+            player.setScoreboard(board.scoreboard);
         }
 
-        // Imposta il titolo
         board.setTitle(plugin.getConfig().getString("scoreboard.event.title", "&c&lBossEvent"));
 
-        // Ottieni e elabora le righe
         List<String> lines = plugin.getConfig().getStringList("scoreboard.event.lines");
         List<String> processed = new ArrayList<>();
 
@@ -167,6 +167,19 @@ public class ScoreboardManager {
 
         if (type == ScoreboardType.EVENT) {
             line = line.replace("%health%", String.valueOf(plugin.getBossEvent().getBossHealth()));
+
+            // Aggiungi le coordinate del boss
+            if (plugin.getBossEvent().getBoss() != null) {
+                line = line.replace("%boss_x%", String.format("%.1f", plugin.getBossEvent().getBoss().getLocation().getX()));
+                line = line.replace("%boss_y%", String.format("%.1f", plugin.getBossEvent().getBoss().getLocation().getY()));
+                line = line.replace("%boss_z%", String.format("%.1f", plugin.getBossEvent().getBoss().getLocation().getZ()));
+                line = line.replace("%boss_world%", plugin.getBossEvent().getBoss().getWorld().getName());
+            } else {
+                line = line.replace("%boss_x%", "N/A");
+                line = line.replace("%boss_y%", "N/A");
+                line = line.replace("%boss_z%", "N/A");
+                line = line.replace("%boss_world%", "N/A");
+            }
 
             Map<UUID, Integer> playerHits = plugin.getBossEvent().getPlayerHits();
             List<Map.Entry<UUID, Integer>> topPlayers = playerHits.entrySet().stream()
@@ -222,8 +235,6 @@ public class ScoreboardManager {
         ScoreboardManager board = getByPlayer(player);
         if (board != null) {
             removeScore(player);
-
-            // Reimposta la scoreboard a null per consentire ad altri plugin di funzionare
             Scoreboard nullBoard = Bukkit.getScoreboardManager().getNewScoreboard();
             player.setScoreboard(nullBoard);
         }
@@ -275,7 +286,6 @@ public class ScoreboardManager {
         return ranking;
     }
 
-    // Metodi di utilità per gestire la formattazione del testo
     private String genEntry(int slot) {
         return ChatColor.values()[slot].toString();
     }

@@ -111,6 +111,8 @@ public class BossEvent {
         plugin.getScoreboardManager().switchToEventScoreboard();
 
         startCheckPlayersTask();
+
+        startBossLocationUpdater();
     }
 
     public void stopEvent() {
@@ -238,6 +240,20 @@ public class BossEvent {
         if (isRunning) {
             plugin.getScoreboardManager().updateEventScoreboard();
         }
+    }
+
+    public void startBossLocationUpdater() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!isRunning || boss == null || boss.isDead()) {
+                    cancel();
+                    return;
+                }
+
+                plugin.getScoreboardManager().updateEventScoreboard();
+            }
+        }.runTaskTimer(plugin, 20, 20);
     }
 
     public boolean isRunning() {

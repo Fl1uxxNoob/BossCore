@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'net.fliuxx'
-version = '1.3'
+version = '1.4'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -28,12 +28,10 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-// Imposta la strategia per i file duplicati
 tasks.withType(Copy) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
-// Include le risorse come plugin.yml nel jar
 processResources {
     from(sourceSets.main.resources.srcDirs) {
         filter { String line -> line.replace('@version@', project.version.toString()) }
@@ -41,7 +39,6 @@ processResources {
     }
 }
 
-// Crea il file JAR nel formato corretto
 jar {
     manifest {
         attributes 'Implementation-Title': project.name,

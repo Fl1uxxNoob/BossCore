@@ -45,6 +45,7 @@ scoreboard:
     title: "&c&lBoss&f&lEvent"
     lines:
       - "&eVita Boss: &a%health%"
+      - "&fPosizione: &e%boss_x%, %boss_y%, %boss_z% &7(%boss_world%)"
       - "&7"
       - "&aI tuoi colpi: &e%yourhits%"
       - "&7"

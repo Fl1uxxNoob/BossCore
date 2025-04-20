@@ -1,6 +1,8 @@
 package net.fliuxx.bossCore.listeners;
 
 import net.fliuxx.bossCore.BossCore;
+import net.fliuxx.bossCore.managers.ScoreboardManager;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
@@ -61,14 +63,16 @@ public class BossListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+        final Player player = event.getPlayer();
 
-        if (plugin.getBossEvent().isRunning()) {
-            plugin.getScoreboardManager().showEventScoreboard(player);
-        } else if (plugin.getBossEvent().isStarting()) {
-            int remainingTime = plugin.getConfig().getInt("event.countdown", 15);
-            plugin.getScoreboardManager().showCountdownScoreboard(player, remainingTime);
-        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (plugin.getBossEvent().isRunning()) {
+                plugin.getScoreboardManager().showEventScoreboard(player);
+            } else if (plugin.getBossEvent().isStarting()) {
+                plugin.getScoreboardManager().showCountdownScoreboard(player,
+                        plugin.getConfig().getInt("event.countdown", 15));
+            }
+        });
     }
 
     @EventHandler
@@ -78,5 +82,7 @@ public class BossListener implements Listener {
         if (plugin.getBossEvent().isRunning()) {
             plugin.getBossEvent().removePlayerFromRanking(player.getUniqueId());
         }
+
+        ScoreboardManager.removeScore(player);
     }
 }
