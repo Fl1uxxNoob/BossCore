@@ -13,6 +13,10 @@ public class ScoreboardManager {
 
     private final BossCore plugin;
     private final Map<UUID, ScoreboardType> playerScoreboards;
+    private final static HashMap<UUID, ScoreboardManager> playerManagers = new HashMap<>();
+
+    private final Scoreboard scoreboard;
+    private final Objective sidebar;
 
     public enum ScoreboardType {
         EVENT,
@@ -23,6 +27,84 @@ public class ScoreboardManager {
     public ScoreboardManager(BossCore plugin) {
         this.plugin = plugin;
         this.playerScoreboards = new HashMap<>();
+        this.scoreboard = null;
+        this.sidebar = null;
+    }
+
+    private ScoreboardManager(Player player) {
+        this.plugin = BossCore.getInstance();
+        this.playerScoreboards = new HashMap<>();
+
+        this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        this.sidebar = this.scoreboard.registerNewObjective("bosscore", "dummy");
+        this.sidebar.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        // Registra 15 team per gestire le righe della scoreboard
+        for (int i = 0; i <= 14; i++) {
+            Team team = this.scoreboard.registerNewTeam("BOSSCORE_" + i);
+            team.addEntry(genEntry(i));
+        }
+
+        player.setScoreboard(this.scoreboard);
+        playerManagers.put(player.getUniqueId(), this);
+    }
+
+    public static ScoreboardManager getByPlayer(Player player) {
+        return playerManagers.get(player.getUniqueId());
+    }
+
+    public static ScoreboardManager createScore(Player player) {
+        return new ScoreboardManager(player);
+    }
+
+    public static ScoreboardManager removeScore(Player player) {
+        return playerManagers.remove(player.getUniqueId());
+    }
+
+    public void setTitle(String title) {
+        title = BossCore.colorize(title);
+        this.sidebar.setDisplayName(title.length() > 32 ? title.substring(0, 32) : title);
+    }
+
+    public void setSlot(int slot, String text) {
+        Team team = this.scoreboard.getTeam("BOSSCORE_" + slot);
+        if (team == null) return;
+
+        String entry = genEntry(slot);
+        if (!this.scoreboard.getEntries().contains(entry)) {
+            this.sidebar.getScore(entry).setScore(slot);
+        }
+
+        text = BossCore.colorize(text);
+        String pre = getFirstSplit(text);
+        String suf = getFirstSplit(ChatColor.getLastColors(pre) + getSecondSplit(text));
+        team.setPrefix(pre);
+        team.setSuffix(suf);
+    }
+
+    public void removeSlot(int slot) {
+        String entry = genEntry(slot);
+        if (this.scoreboard.getEntries().contains(entry)) {
+            this.scoreboard.resetScores(entry);
+        }
+    }
+
+    public void setSlotsFromList(List<String> list) {
+        while (list.size() > 15) {
+            list.remove(list.size() - 1);
+        }
+
+        int slot = list.size();
+        if (slot < 15) {
+            for (int i = slot + 1; i <= 15; i++) {
+                removeSlot(i);
+            }
+        }
+
+        for (String line : list) {
+            setSlot(slot, line);
+            slot--;
+        }
     }
 
     public void showEventScoreboard(Player player) {
@@ -30,33 +112,23 @@ public class ScoreboardManager {
             return;
         }
 
-        org.bukkit.scoreboard.ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
-        Scoreboard scoreboard = bukkitManager.getNewScoreboard();
-
-        Objective objective = scoreboard.registerNewObjective("bossevent", "dummy");
-        objective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
-                plugin.getConfig().getString("scoreboard.event.title", "&c&lBossEvent")));
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
-        List<String> lines = plugin.getConfig().getStringList("scoreboard.event.lines");
-        int scoreValue = lines.size();
-
-        for (String line : lines) {
-            line = replacePlaceholders(line, ScoreboardType.EVENT, player);
-            String entry = ChatColor.translateAlternateColorCodes('&', line);
-
-            while (scoreboard.getEntries().contains(entry)) {
-                entry = entry + "§r";
-            }
-
-            if (entry.length() > 40) {
-                entry = entry.substring(0, 40);
-            }
-
-            objective.getScore(entry).setScore(scoreValue--);
+        ScoreboardManager board = getByPlayer(player);
+        if (board == null) {
+            board = createScore(player);
         }
 
-        player.setScoreboard(scoreboard);
+        // Imposta il titolo
+        board.setTitle(plugin.getConfig().getString("scoreboard.event.title", "&c&lBossEvent"));
+
+        // Ottieni e elabora le righe
+        List<String> lines = plugin.getConfig().getStringList("scoreboard.event.lines");
+        List<String> processed = new ArrayList<>();
+
+        for (String line : lines) {
+            processed.add(replacePlaceholders(line, ScoreboardType.EVENT, player));
+        }
+
+        board.setSlotsFromList(processed);
         playerScoreboards.put(player.getUniqueId(), ScoreboardType.EVENT);
     }
 
@@ -65,34 +137,24 @@ public class ScoreboardManager {
             return;
         }
 
-        org.bukkit.scoreboard.ScoreboardManager bukkitManager = Bukkit.getScoreboardManager();
-        Scoreboard scoreboard = bukkitManager.getNewScoreboard();
+        ScoreboardManager board = getByPlayer(player);
+        if (board == null) {
+            board = createScore(player);
+        }
 
-        Objective objective = scoreboard.registerNewObjective("bosscountdown", "dummy");
-        objective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
-                plugin.getConfig().getString("scoreboard.countdown.title", "&c&lBossEvent &7- &fCountdown")));
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        // Imposta il titolo
+        board.setTitle(plugin.getConfig().getString("scoreboard.countdown.title", "&c&lBossEvent"));
 
+        // Ottieni e elabora le righe
         List<String> lines = plugin.getConfig().getStringList("scoreboard.countdown.lines");
-        int scoreValue = lines.size();
+        List<String> processed = new ArrayList<>();
 
         for (String line : lines) {
             line = line.replace("%time%", String.valueOf(timeLeft));
-            line = replacePlaceholders(line, ScoreboardType.COUNTDOWN, player); // Aggiunto player
-            String entry = ChatColor.translateAlternateColorCodes('&', line);
-
-            while (scoreboard.getEntries().contains(entry)) {
-                entry = entry + "§r";
-            }
-
-            if (entry.length() > 40) {
-                entry = entry.substring(0, 40);
-            }
-
-            objective.getScore(entry).setScore(scoreValue--);
+            processed.add(replacePlaceholders(line, ScoreboardType.COUNTDOWN, player));
         }
 
-        player.setScoreboard(scoreboard);
+        board.setSlotsFromList(processed);
         playerScoreboards.put(player.getUniqueId(), ScoreboardType.COUNTDOWN);
     }
 
@@ -157,7 +219,14 @@ public class ScoreboardManager {
     }
 
     public void removeScoreboard(Player player) {
-        player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+        ScoreboardManager board = getByPlayer(player);
+        if (board != null) {
+            removeScore(player);
+
+            // Reimposta la scoreboard a null per consentire ad altri plugin di funzionare
+            Scoreboard nullBoard = Bukkit.getScoreboardManager().getNewScoreboard();
+            player.setScoreboard(nullBoard);
+        }
         playerScoreboards.remove(player.getUniqueId());
     }
 
@@ -165,6 +234,7 @@ public class ScoreboardManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             removeScoreboard(player);
         }
+        playerManagers.clear();
         playerScoreboards.clear();
     }
 
@@ -203,5 +273,20 @@ public class ScoreboardManager {
         }
 
         return ranking;
+    }
+
+    // Metodi di utilità per gestire la formattazione del testo
+    private String genEntry(int slot) {
+        return ChatColor.values()[slot].toString();
+    }
+
+    private String getFirstSplit(String s) {
+        return (s.length() > 16) ? s.substring(0, 16) : s;
+    }
+
+    private String getSecondSplit(String s) {
+        if (s.length() > 32)
+            s = s.substring(0, 32);
+        return (s.length() > 16) ? s.substring(16) : "";
     }
 }
