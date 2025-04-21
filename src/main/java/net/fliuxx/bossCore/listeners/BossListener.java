@@ -28,12 +28,17 @@ public class BossListener implements Listener {
         Entity damaged = event.getEntity();
         Entity damager = event.getDamager();
 
-        if (damaged instanceof IronGolem && damaged.hasMetadata("bossevent") && plugin.getBossEvent().isRunning()) {
-            if (damager instanceof Player) {
+        if (damaged instanceof IronGolem && damaged.hasMetadata("bossevent")) {
+            // Controlla se siamo nel countdown (il boss non è attaccabile)
+            if (damaged.hasMetadata("countdown")) {
+                event.setCancelled(true);
+                return;
+            }
+
+            // Se l'evento è in corso, procedi con il colpo
+            if (plugin.getBossEvent().isRunning() && damager instanceof Player) {
                 Player player = (Player) damager;
-
                 plugin.getBossEvent().registerHit(player);
-
                 event.setDamage(0);
             }
         }
@@ -56,7 +61,7 @@ public class BossListener implements Listener {
         Entity entity = event.getEntity();
 
         if (entity instanceof IronGolem && entity.hasMetadata("bossevent") &&
-                !plugin.getConfig().getBoolean("event.boss.can-attack", false)) {
+                (!plugin.getConfig().getBoolean("event.boss.can-attack", false) || entity.hasMetadata("countdown"))) {
             event.setCancelled(true);
         }
     }

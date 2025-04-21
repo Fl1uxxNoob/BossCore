@@ -11,6 +11,9 @@ event:
   # Durata del countdown in secondi
   countdown: 15
 
+  # Visibilità del boss durante il countdown (se true, il boss sarà visibile ma non attaccabile)
+  visible-during-countdown: false
+
   # Posizione di spawn del boss
   location:
     world: "world"
@@ -22,6 +25,10 @@ event:
   boss:
     # Numero di hit necessarie per uccidere il boss
     health: 100
+    # Nome personalizzato del boss
+    name: "&c&lBoss &f&lEvent"
+    # Formato del display del nome (con vita)
+    display-format: "&c&l%name% &7| &eVita: &a%health%"
 
 # Configurazione delle scoreboard
 scoreboard:

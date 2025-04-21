@@ -55,13 +55,14 @@ public class BossCore extends JavaPlugin {
     private void loadConfig() {
         saveDefaultConfig();
 
+        // Configurazione scoreboard evento
         if (!getConfig().isSet("scoreboard.event.lines")) {
             getConfig().set("scoreboard.event.enabled", true);
             getConfig().set("scoreboard.event.title", "&c&lBoss&f&lEvent");
             getConfig().createSection("scoreboard.event.lines");
             getConfig().getStringList("scoreboard.event.lines").add("&eVita Boss: &a%health%");
             getConfig().getStringList("scoreboard.event.lines").add("&7");
-            getConfig().getStringList("scoreboard.event.lines").add("&aI tuoi colpi: &e%yourhits%");  // Nuova riga
+            getConfig().getStringList("scoreboard.event.lines").add("&aI tuoi colpi: &e%yourhits%");
             getConfig().getStringList("scoreboard.event.lines").add("&7");
             getConfig().getStringList("scoreboard.event.lines").add("&6TOP GIOCATORI:");
             getConfig().getStringList("scoreboard.event.lines").add("&f#1: %player1% &7- &e%hits1%");
@@ -71,6 +72,7 @@ public class BossCore extends JavaPlugin {
             getConfig().getStringList("scoreboard.event.lines").add("&fServer: &e%server%");
         }
 
+        // Configurazione scoreboard countdown
         if (!getConfig().isSet("scoreboard.countdown.lines")) {
             getConfig().set("scoreboard.countdown.enabled", true);
             getConfig().set("scoreboard.countdown.title", "&c&lBoss&f&lEvent");
@@ -86,12 +88,14 @@ public class BossCore extends JavaPlugin {
             getConfig().getStringList("scoreboard.countdown.lines").add("&fServer: &e%server%");
         }
 
+        // Configurazione descrizione premi
         if (!getConfig().isSet("rewards.desc.rank1")) {
             getConfig().set("rewards.desc.rank1", "3x Diamond Block");
             getConfig().set("rewards.desc.rank2", "2x Diamond Block");
             getConfig().set("rewards.desc.rank3", "1x Diamond Block");
         }
 
+        // Configurazione messaggi
         if (!getConfig().isSet("messages.event.ranking")) {
             getConfig().set("messages.event.ranking",
                     "&8&m----------------------------------------\n" +
@@ -105,6 +109,19 @@ public class BossCore extends JavaPlugin {
 
         if (!getConfig().isSet("messages.event.no-players")) {
             getConfig().set("messages.event.no-players", "&c&lL'evento è stato terminato perché non ci sono più giocatori online!");
+        }
+
+        // Nuove configurazioni
+        if (!getConfig().isSet("event.boss.name")) {
+            getConfig().set("event.boss.name", "&c&lBoss &f&lEvent");
+        }
+
+        if (!getConfig().isSet("event.boss.display-format")) {
+            getConfig().set("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
+        }
+
+        if (!getConfig().isSet("event.visible-during-countdown")) {
+            getConfig().set("event.visible-during-countdown", false);
         }
 
         saveConfig();
@@ -128,8 +145,14 @@ public class BossCore extends JavaPlugin {
     }
 
     public String getMessage(String path) {
+        String message = getConfig().getString("messages." + path, "");
+
+        // Se il messaggio è vuoto, ritorna una stringa vuota
+        if (message.isEmpty()) {
+            return "";
+        }
+
         String prefix = getConfig().getString("settings.prefix", "&8[&c&lBoss&f&lCore&8] &r");
-        String message = getConfig().getString("messages." + path, "&cMessaggio non trovato: " + path);
         return colorize(prefix + message);
     }
 }

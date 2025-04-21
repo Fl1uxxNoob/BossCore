@@ -28,6 +28,7 @@ public class BossEvent {
     private IronGolem boss;
     private int bossHealth;
     private final Map<UUID, Integer> playerHits;
+    private Location bossSpawnLocation;
 
     public BossEvent(BossCore plugin) {
         this.plugin = plugin;
@@ -42,8 +43,33 @@ public class BossEvent {
         isStarting = true;
         final int countdown = plugin.getConfig().getInt("event.countdown", 15);
 
-        Bukkit.broadcastMessage(plugin.getMessage("event.countdown-started")
-                .replace("%time%", String.valueOf(countdown)));
+        // Preparare la location per lo spawn del boss
+        String worldName = plugin.getConfig().getString("event.location.world", "world");
+        double x = plugin.getConfig().getDouble("event.location.x", 0);
+        double y = plugin.getConfig().getDouble("event.location.y", 64);
+        double z = plugin.getConfig().getDouble("event.location.z", 0);
+        World world = Bukkit.getWorld(worldName);
+
+        if (world == null) {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[BossCore] Mondo non trovato: " + worldName);
+            isStarting = false;
+            return;
+        }
+
+        bossSpawnLocation = new Location(world, x, y, z);
+        bossHealth = plugin.getConfig().getInt("event.boss.health", 100);
+
+        // Controllo se il boss deve essere visibile durante il countdown
+        if (plugin.getConfig().getBoolean("event.visible-during-countdown", false)) {
+            spawnBoss(false); // Spawna boss (non attaccabile)
+        }
+
+        String countdownMessage = plugin.getMessage("event.countdown-started")
+                .replace("%time%", String.valueOf(countdown));
+
+        if (!countdownMessage.isEmpty()) {
+            Bukkit.broadcastMessage(countdownMessage);
+        }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             plugin.getScoreboardManager().showCountdownScoreboard(player, countdown);
@@ -63,13 +89,47 @@ public class BossEvent {
                 plugin.getScoreboardManager().updateCountdownScoreboard(timeLeft);
 
                 if (timeLeft <= 5 || timeLeft == 10 || timeLeft == 15 || timeLeft == 30 || timeLeft == 60) {
-                    Bukkit.broadcastMessage(plugin.getMessage("event.countdown")
-                            .replace("%time%", String.valueOf(timeLeft)));
+                    String message = plugin.getMessage("event.countdown")
+                            .replace("%time%", String.valueOf(timeLeft));
+
+                    if (!message.isEmpty()) {
+                        Bukkit.broadcastMessage(message);
+                    }
                 }
 
                 timeLeft--;
             }
         }.runTaskTimer(plugin, 0, 20);
+    }
+
+    private void spawnBoss(boolean attackable) {
+        if (boss != null && !boss.isDead()) {
+            boss.remove();
+        }
+
+        boss = (IronGolem) bossSpawnLocation.getWorld().spawnEntity(bossSpawnLocation, EntityType.IRON_GOLEM);
+
+        // Ottenere il nome del boss dal config
+        String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
+        String displayFormat = plugin.getConfig().getString("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
+
+        String customName = displayFormat.replace("%name%", bossName).replace("%health%", String.valueOf(bossHealth));
+        boss.setCustomName(ChatColor.translateAlternateColorCodes('&', customName));
+        boss.setCustomNameVisible(true);
+
+        // Metadati per identificare il boss dell'evento
+        boss.setMetadata("bossevent", new FixedMetadataValue(plugin, true));
+
+        // Se il boss non è attaccabile (durante il countdown), aggiungi un metadata per indicarlo
+        if (!attackable) {
+            boss.setMetadata("countdown", new FixedMetadataValue(plugin, true));
+        } else {
+            boss.removeMetadata("countdown", plugin);
+        }
+
+        // Aggiungere effetti per impedire al boss di muoversi
+        boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 100, false, false));
+        boss.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 128, false, false));
     }
 
     public void startEvent() {
@@ -81,37 +141,22 @@ public class BossEvent {
         isRunning = true;
         playerHits.clear();
 
-        String worldName = plugin.getConfig().getString("event.location.world", "world");
-        double x = plugin.getConfig().getDouble("event.location.x", 0);
-        double y = plugin.getConfig().getDouble("event.location.y", 64);
-        double z = plugin.getConfig().getDouble("event.location.z", 0);
-        World world = Bukkit.getWorld(worldName);
-
-        if (world == null) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[BossCore] Mondo non trovato: " + worldName);
-            isRunning = false;
-            return;
+        // Se il boss è già visibile (durante il countdown), aggiornalo per renderlo attaccabile
+        if (boss != null && !boss.isDead()) {
+            boss.removeMetadata("countdown", plugin);
+        } else {
+            // Altrimenti, spawnalo
+            spawnBoss(true);
         }
 
-        Location spawnLocation = new Location(world, x, y, z);
-
-        bossHealth = plugin.getConfig().getInt("event.boss.health", 100);
-
-        boss = (IronGolem) world.spawnEntity(spawnLocation, EntityType.IRON_GOLEM);
-        boss.setCustomName(ChatColor.RED + "" + ChatColor.BOLD + "Boss" + ChatColor.WHITE + ChatColor.BOLD + " | "
-                + ChatColor.YELLOW + "Vita: " + ChatColor.GREEN + bossHealth);
-        boss.setCustomNameVisible(true);
-        boss.setMetadata("bossevent", new FixedMetadataValue(plugin, true));
-
-        boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 100, false, false));
-        boss.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 128, false, false));
-
-        Bukkit.broadcastMessage(plugin.getMessage("event.started"));
+        String startMessage = plugin.getMessage("event.started");
+        if (!startMessage.isEmpty()) {
+            Bukkit.broadcastMessage(startMessage);
+        }
 
         plugin.getScoreboardManager().switchToEventScoreboard();
 
         startCheckPlayersTask();
-
         startBossLocationUpdater();
     }
 
@@ -136,10 +181,16 @@ public class BossEvent {
 
         isRunning = false;
 
-        Bukkit.broadcastMessage(plugin.getMessage("event.ended"));
+        String endMessage = plugin.getMessage("event.ended");
+        if (!endMessage.isEmpty()) {
+            Bukkit.broadcastMessage(endMessage);
+        }
 
         if (!forcedStop && !playerHits.isEmpty()) {
-            Bukkit.broadcastMessage(plugin.getScoreboardManager().getFormattedRanking());
+            String ranking = plugin.getScoreboardManager().getFormattedRanking();
+            if (!ranking.isEmpty()) {
+                Bukkit.broadcastMessage(ranking);
+            }
 
             distributeRewards();
         }
@@ -154,15 +205,25 @@ public class BossEvent {
             countdownTask.cancel();
             countdownTask = null;
         }
+
         isStarting = false;
+
+        // Se il boss è visibile durante il countdown, rimuovilo
+        if (boss != null && !boss.isDead() && boss.hasMetadata("countdown")) {
+            boss.remove();
+            boss = null;
+        }
 
         plugin.getScoreboardManager().removeAllScoreboards();
 
-        Bukkit.broadcastMessage(plugin.getMessage("event.countdown-cancelled"));
+        String cancelMessage = plugin.getMessage("event.countdown-cancelled");
+        if (!cancelMessage.isEmpty()) {
+            Bukkit.broadcastMessage(cancelMessage);
+        }
     }
 
     public void registerHit(Player player) {
-        if (!isRunning || boss == null || boss.isDead()) {
+        if (!isRunning || boss == null || boss.isDead() || boss.hasMetadata("countdown")) {
             return;
         }
 
@@ -172,8 +233,12 @@ public class BossEvent {
 
         bossHealth--;
 
-        boss.setCustomName(ChatColor.RED + "" + ChatColor.BOLD + "Boss" + ChatColor.WHITE + ChatColor.BOLD + " | "
-                + ChatColor.YELLOW + "Vita: " + ChatColor.GREEN + bossHealth);
+        // Aggiornare il nome del boss con la nuova vita
+        String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
+        String displayFormat = plugin.getConfig().getString("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
+
+        String customName = displayFormat.replace("%name%", bossName).replace("%health%", String.valueOf(bossHealth));
+        boss.setCustomName(ChatColor.translateAlternateColorCodes('&', customName));
 
         plugin.getScoreboardManager().updateEventScoreboard();
 
@@ -196,13 +261,21 @@ public class BossEvent {
 
                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), rewardCommand);
 
-                        player.sendMessage(plugin.getMessage("rewards.received")
-                                .replace("%rank%", String.valueOf(rank)));
+                        String rewardMessage = plugin.getMessage("rewards.received")
+                                .replace("%rank%", String.valueOf(rank));
+
+                        if (!rewardMessage.isEmpty()) {
+                            player.sendMessage(rewardMessage);
+                        }
 
                         if (rank == 1) {
-                            Bukkit.broadcastMessage(plugin.getMessage("event.winner")
+                            String winnerMessage = plugin.getMessage("event.winner")
                                     .replace("%player%", player.getName())
-                                    .replace("%hits%", String.valueOf(entry.getValue())));
+                                    .replace("%hits%", String.valueOf(entry.getValue()));
+
+                            if (!winnerMessage.isEmpty()) {
+                                Bukkit.broadcastMessage(winnerMessage);
+                            }
                         }
                     }
                 });
@@ -226,7 +299,10 @@ public class BossEvent {
             @Override
             public void run() {
                 if (Bukkit.getOnlinePlayers().isEmpty()) {
-                    Bukkit.broadcastMessage(plugin.getMessage("event.no-players"));
+                    String noPlayersMessage = plugin.getMessage("event.no-players");
+                    if (!noPlayersMessage.isEmpty()) {
+                        Bukkit.broadcastMessage(noPlayersMessage);
+                    }
                     stopEvent(true);
                     cancel();
                 }
