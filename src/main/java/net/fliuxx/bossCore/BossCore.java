@@ -4,6 +4,7 @@ import net.fliuxx.bossCore.commands.BossCoreCommand;
 import net.fliuxx.bossCore.events.BossEvent;
 import net.fliuxx.bossCore.listeners.BossListener;
 import net.fliuxx.bossCore.managers.ScoreboardManager;
+import net.fliuxx.bossCore.listeners.BypassListener;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -50,6 +51,7 @@ public class BossCore extends JavaPlugin {
 
     private void registerEvents() {
         Bukkit.getPluginManager().registerEvents(new BossListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new BypassListener(this), this);
     }
 
     private void loadConfig() {
@@ -149,7 +151,7 @@ public class BossCore extends JavaPlugin {
 
         // Se il messaggio è vuoto, ritorna una stringa vuota
         if (message.isEmpty()) {
-            return "";
+            return null;
         }
 
         String prefix = getConfig().getString("settings.prefix", "&8[&c&lBoss&f&lCore&8] &r");
