@@ -57,7 +57,6 @@ public class BossCore extends JavaPlugin {
     private void loadConfig() {
         saveDefaultConfig();
 
-        // Configurazione scoreboard evento
         if (!getConfig().isSet("scoreboard.event.lines")) {
             getConfig().set("scoreboard.event.enabled", true);
             getConfig().set("scoreboard.event.title", "&c&lBoss&f&lEvent");
@@ -74,7 +73,6 @@ public class BossCore extends JavaPlugin {
             getConfig().getStringList("scoreboard.event.lines").add("&fServer: &e%server%");
         }
 
-        // Configurazione scoreboard countdown
         if (!getConfig().isSet("scoreboard.countdown.lines")) {
             getConfig().set("scoreboard.countdown.enabled", true);
             getConfig().set("scoreboard.countdown.title", "&c&lBoss&f&lEvent");
@@ -90,14 +88,12 @@ public class BossCore extends JavaPlugin {
             getConfig().getStringList("scoreboard.countdown.lines").add("&fServer: &e%server%");
         }
 
-        // Configurazione descrizione premi
         if (!getConfig().isSet("rewards.desc.rank1")) {
             getConfig().set("rewards.desc.rank1", "3x Diamond Block");
             getConfig().set("rewards.desc.rank2", "2x Diamond Block");
             getConfig().set("rewards.desc.rank3", "1x Diamond Block");
         }
 
-        // Configurazione messaggi
         if (!getConfig().isSet("messages.event.ranking")) {
             getConfig().set("messages.event.ranking",
                     "&8&m----------------------------------------\n" +
