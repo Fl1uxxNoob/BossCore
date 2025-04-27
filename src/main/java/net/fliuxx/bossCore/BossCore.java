@@ -5,6 +5,7 @@ import net.fliuxx.bossCore.events.BossEvent;
 import net.fliuxx.bossCore.listeners.BossListener;
 import net.fliuxx.bossCore.managers.ScoreboardManager;
 import net.fliuxx.bossCore.listeners.BypassListener;
+import net.fliuxx.bossCore.abilities.AbilityManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,6 +15,7 @@ public class BossCore extends JavaPlugin {
     private static BossCore instance;
     private BossEvent bossEvent;
     private ScoreboardManager scoreboardManager;
+    private AbilityManager abilityManager;
 
     @Override
     public void onEnable() {
@@ -26,6 +28,7 @@ public class BossCore extends JavaPlugin {
 
         this.scoreboardManager = new ScoreboardManager(this);
         this.bossEvent = new BossEvent(this);
+        this.abilityManager = new AbilityManager(this);
 
         registerCommands();
         registerEvents();
@@ -90,6 +93,18 @@ public class BossCore extends JavaPlugin {
             getConfig().getStringList("scoreboard.countdown.lines").add("&fServer: &e%server%");
         }
 
+        // Configurazione abilità PushBack
+        if (!getConfig().isSet("abilities.pushback.enabled")) {
+            getConfig().set("abilities.pushback.enabled", true);
+            getConfig().set("abilities.pushback.trigger-hits", 10);
+            getConfig().set("abilities.pushback.range", 5.0);
+            getConfig().set("abilities.pushback.power-horizontal", 2.0);
+            getConfig().set("abilities.pushback.power-vertical", 0.5);
+            getConfig().set("abilities.pushback.sound", "EXPLODE");
+            getConfig().set("abilities.pushback.message", "&c&lIl boss respinge tutti i giocatori!");
+            getConfig().set("abilities.max-detection-range", 20.0);
+        }
+
         // Configurazione descrizione premi
         if (!getConfig().isSet("rewards.desc.rank1")) {
             getConfig().set("rewards.desc.rank1", "3x Diamond Block");
@@ -140,6 +155,10 @@ public class BossCore extends JavaPlugin {
 
     public ScoreboardManager getScoreboardManager() {
         return scoreboardManager;
+    }
+
+    public AbilityManager getAbilityManager() {
+        return abilityManager;
     }
 
     public static String colorize(String message) {

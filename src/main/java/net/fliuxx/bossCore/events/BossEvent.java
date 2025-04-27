@@ -15,6 +15,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
+import net.fliuxx.bossCore.abilities.AbilityManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -210,6 +211,8 @@ public class BossEvent {
 
         startCheckPlayersTask();
         startBossLocationUpdater();
+
+        plugin.getAbilityManager().startAbilityChecks();
     }
 
     public void stopEvent() {
@@ -240,6 +243,8 @@ public class BossEvent {
             positionTask.cancel();
             positionTask = null;
         }
+
+        plugin.getAbilityManager().stopAbilityChecks();
 
         isRunning = false;
 

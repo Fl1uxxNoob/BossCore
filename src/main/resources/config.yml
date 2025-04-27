@@ -30,6 +30,27 @@ event:
     # Formato del display del nome (con vita)
     display-format: "&c&l%name% &7| &eVita: &a%health%"
 
+abilities:
+  # Raggio massimo per il rilevamento dei giocatori per le abilità
+  max-detection-range: 20.0
+
+  # Abilità di respingimento
+  pushback:
+    # Se l'abilità è abilitata o no
+    enabled: true
+    # Numero di colpi dopo i quali il boss attiva l'abilità
+    trigger-hits: 10
+    # Raggio d'azione dell'abilità (in blocchi)
+    range: 5.0
+    # Potenza di respingimento orizzontale
+    power-horizontal: 2.0
+    # Potenza di respingimento verticale
+    power-vertical: 0.5
+    # Suono da riprodurre quando l'abilità viene attivata
+    sound: "EXPLODE"
+    # Messaggio da visualizzare quando l'abilità viene attivata
+    message: "&c&lIl boss respinge tutti i giocatori!"
+
 # Configurazione delle scoreboard
 scoreboard:
   # Configurazione della scoreboard del countdown
