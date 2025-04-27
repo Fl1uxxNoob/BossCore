@@ -3,6 +3,7 @@ package net.fliuxx.bossCore.events;
 import net.fliuxx.bossCore.BossCore;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
@@ -25,6 +26,7 @@ public class BossEvent {
     private boolean isStarting = false;
     private BukkitTask countdownTask;
     private BukkitTask checkPlayersTask;
+    private BukkitTask fireproofTask;
     private IronGolem boss;
     private int bossHealth;
     private final Map<UUID, Integer> playerHits;
@@ -42,8 +44,6 @@ public class BossEvent {
 
         isStarting = true;
         final int countdown = plugin.getConfig().getInt("event.countdown", 15);
-
-        // Preparare la location per lo spawn del boss
         String worldName = plugin.getConfig().getString("event.location.world", "world");
         double x = plugin.getConfig().getDouble("event.location.x", 0);
         double y = plugin.getConfig().getDouble("event.location.y", 64);
@@ -58,10 +58,8 @@ public class BossEvent {
 
         bossSpawnLocation = new Location(world, x, y, z);
         bossHealth = plugin.getConfig().getInt("event.boss.health", 100);
-
-        // Controllo se il boss deve essere visibile durante il countdown
         if (plugin.getConfig().getBoolean("event.visible-during-countdown", false)) {
-            spawnBoss(false); // Spawna boss (non attaccabile)
+            spawnBoss(false);
         }
 
         String countdownMessage = plugin.getMessage("event.countdown-started")
@@ -109,27 +107,51 @@ public class BossEvent {
 
         boss = (IronGolem) bossSpawnLocation.getWorld().spawnEntity(bossSpawnLocation, EntityType.IRON_GOLEM);
 
-        // Ottenere il nome del boss dal config
         String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
         String displayFormat = plugin.getConfig().getString("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
 
         String customName = displayFormat.replace("%name%", bossName).replace("%health%", String.valueOf(bossHealth));
         boss.setCustomName(ChatColor.translateAlternateColorCodes('&', customName));
         boss.setCustomNameVisible(true);
-
-        // Metadati per identificare il boss dell'evento
         boss.setMetadata("bossevent", new FixedMetadataValue(plugin, true));
+        boss.setFireTicks(0);
+        boss.setMetadata("fireproof", new FixedMetadataValue(plugin, true));
 
-        // Se il boss non è attaccabile (durante il countdown), aggiungi un metadata per indicarlo
         if (!attackable) {
             boss.setMetadata("countdown", new FixedMetadataValue(plugin, true));
+            boss.setMetadata("no_collision", new FixedMetadataValue(plugin, true));
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.playEffect(boss.getLocation(), Effect.SMOKE, 0);
+            }
         } else {
             boss.removeMetadata("countdown", plugin);
+            boss.removeMetadata("no_collision", plugin);
         }
 
-        // Aggiungere effetti per impedire al boss di muoversi
         boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 100, false, false));
         boss.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 128, false, false));
+
+        startFireproofTask();
+    }
+
+    private void startFireproofTask() {
+        if (fireproofTask != null) {
+            fireproofTask.cancel();
+        }
+
+        fireproofTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (boss != null && !boss.isDead()) {
+                    if (boss.getFireTicks() > 0) {
+                        boss.setFireTicks(0);
+                    }
+                } else {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0, 1);
     }
 
     public void startEvent() {
@@ -141,11 +163,10 @@ public class BossEvent {
         isRunning = true;
         playerHits.clear();
 
-        // Se il boss è già visibile (durante il countdown), aggiornalo per renderlo attaccabile
         if (boss != null && !boss.isDead()) {
             boss.removeMetadata("countdown", plugin);
+            boss.removeMetadata("no_collision", plugin);
         } else {
-            // Altrimenti, spawnalo
             spawnBoss(true);
         }
 
@@ -179,6 +200,11 @@ public class BossEvent {
             checkPlayersTask = null;
         }
 
+        if (fireproofTask != null) {
+            fireproofTask.cancel();
+            fireproofTask = null;
+        }
+
         isRunning = false;
 
         String endMessage = plugin.getMessage("event.ended");
@@ -208,10 +234,14 @@ public class BossEvent {
 
         isStarting = false;
 
-        // Se il boss è visibile durante il countdown, rimuovilo
         if (boss != null && !boss.isDead() && boss.hasMetadata("countdown")) {
             boss.remove();
             boss = null;
+        }
+
+        if (fireproofTask != null) {
+            fireproofTask.cancel();
+            fireproofTask = null;
         }
 
         plugin.getScoreboardManager().removeAllScoreboards();
@@ -233,7 +263,6 @@ public class BossEvent {
 
         bossHealth--;
 
-        // Aggiornare il nome del boss con la nuova vita
         String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
         String displayFormat = plugin.getConfig().getString("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
 

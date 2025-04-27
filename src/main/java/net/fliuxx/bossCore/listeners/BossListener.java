@@ -3,17 +3,21 @@ package net.fliuxx.bossCore.listeners;
 import net.fliuxx.bossCore.BossCore;
 import net.fliuxx.bossCore.managers.ScoreboardManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.util.Vector;
 
 public class BossListener implements Listener {
 
@@ -29,18 +33,24 @@ public class BossListener implements Listener {
         Entity damager = event.getDamager();
 
         if (damaged instanceof IronGolem && damaged.hasMetadata("bossevent")) {
-            // Controlla se siamo nel countdown (il boss non è attaccabile)
             if (damaged.hasMetadata("countdown")) {
                 event.setCancelled(true);
                 return;
             }
 
-            // Se l'evento è in corso, procedi con il colpo
             if (plugin.getBossEvent().isRunning() && damager instanceof Player) {
                 Player player = (Player) damager;
                 plugin.getBossEvent().registerHit(player);
                 event.setDamage(0);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityCombust(EntityCombustEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof IronGolem && entity.hasMetadata("bossevent")) {
+            event.setCancelled(true);
         }
     }
 
@@ -63,6 +73,27 @@ public class BossListener implements Listener {
         if (entity instanceof IronGolem && entity.hasMetadata("bossevent") &&
                 (!plugin.getConfig().getBoolean("event.boss.can-attack", false) || entity.hasMetadata("countdown"))) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+
+        if (!plugin.getBossEvent().isStarting() || plugin.getBossEvent().getBoss() == null) {
+            return;
+        }
+
+        IronGolem boss = plugin.getBossEvent().getBoss();
+        if (boss.hasMetadata("no_collision")) {
+            if (player.getLocation().distance(boss.getLocation()) < 1.5) {
+                Location playerLoc = player.getLocation();
+                Vector direction = playerLoc.toVector().subtract(boss.getLocation().toVector()).normalize();
+
+                if (direction.length() > 0) {
+                    player.setVelocity(direction.multiply(0.5));
+                }
+            }
         }
     }
 
