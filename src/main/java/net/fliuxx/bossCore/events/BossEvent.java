@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class BossEvent {
     private BukkitTask countdownTask;
     private BukkitTask checkPlayersTask;
     private BukkitTask fireproofTask;
+    private BukkitTask positionTask; // Task per mantenere la posizione fissa durante il countdown
     private IronGolem boss;
     private int bossHealth;
     private final Map<UUID, Integer> playerHits;
@@ -60,6 +62,7 @@ public class BossEvent {
         bossHealth = plugin.getConfig().getInt("event.boss.health", 100);
         if (plugin.getConfig().getBoolean("event.visible-during-countdown", false)) {
             spawnBoss(false);
+            startPositionTask(); // Avvia il task per mantenere la posizione fissa
         }
 
         String countdownMessage = plugin.getMessage("event.countdown-started")
@@ -98,6 +101,28 @@ public class BossEvent {
                 timeLeft--;
             }
         }.runTaskTimer(plugin, 0, 20);
+    }
+
+    // Metodo per mantenere il boss nella stessa posizione durante il countdown
+    private void startPositionTask() {
+        if (positionTask != null) {
+            positionTask.cancel();
+        }
+
+        positionTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (boss != null && !boss.isDead() && boss.hasMetadata("countdown")) {
+                    // Teleporta il boss alla posizione originale
+                    boss.teleport(bossSpawnLocation);
+
+                    // Imposta la velocità a zero per evitare qualsiasi movimento
+                    boss.setVelocity(new Vector(0, 0, 0));
+                } else {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0, 1); // Esegui ogni tick per garantire la posizione fissa
     }
 
     private void spawnBoss(boolean attackable) {
@@ -163,6 +188,12 @@ public class BossEvent {
         isRunning = true;
         playerHits.clear();
 
+        // Cancella il task di posizione fissa
+        if (positionTask != null) {
+            positionTask.cancel();
+            positionTask = null;
+        }
+
         if (boss != null && !boss.isDead()) {
             boss.removeMetadata("countdown", plugin);
             boss.removeMetadata("no_collision", plugin);
@@ -205,6 +236,11 @@ public class BossEvent {
             fireproofTask = null;
         }
 
+        if (positionTask != null) {
+            positionTask.cancel();
+            positionTask = null;
+        }
+
         isRunning = false;
 
         String endMessage = plugin.getMessage("event.ended");
@@ -230,6 +266,11 @@ public class BossEvent {
         if (countdownTask != null) {
             countdownTask.cancel();
             countdownTask = null;
+        }
+
+        if (positionTask != null) {
+            positionTask.cancel();
+            positionTask = null;
         }
 
         isStarting = false;

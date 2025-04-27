@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.util.Vector;
 
 public class BossListener implements Listener {
@@ -43,6 +44,15 @@ public class BossListener implements Listener {
                 plugin.getBossEvent().registerHit(player);
                 event.setDamage(0);
             }
+        }
+    }
+
+    // Aggiunto nuovo handler per prevenire qualsiasi danno durante il countdown
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamageGeneral(EntityDamageEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof IronGolem && entity.hasMetadata("bossevent") && entity.hasMetadata("countdown")) {
+            event.setCancelled(true);
         }
     }
 
