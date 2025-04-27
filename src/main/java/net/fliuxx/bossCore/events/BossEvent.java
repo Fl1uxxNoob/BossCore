@@ -1,7 +1,6 @@
 package net.fliuxx.bossCore.events;
 
 import net.fliuxx.bossCore.BossCore;
-import net.fliuxx.bossCore.abilities.BossAbility;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -28,15 +27,12 @@ public class BossEvent {
     private BukkitTask checkPlayersTask;
     private IronGolem boss;
     private int bossHealth;
-    private int totalHitsDealt = 0; // Contatore totale dei colpi ricevuti dal boss
     private final Map<UUID, Integer> playerHits;
     private Location bossSpawnLocation;
-    private final BossAbility bossAbility; // Aggiunta della classe per le abilità
 
     public BossEvent(BossCore plugin) {
         this.plugin = plugin;
         this.playerHits = new HashMap<>();
-        this.bossAbility = new BossAbility(plugin); // Inizializzazione della classe abilità
     }
 
     public void startCountdown() {
@@ -62,7 +58,6 @@ public class BossEvent {
 
         bossSpawnLocation = new Location(world, x, y, z);
         bossHealth = plugin.getConfig().getInt("event.boss.health", 100);
-        totalHitsDealt = 0; // Reset del contatore dei colpi totali
 
         // Controllo se il boss deve essere visibile durante il countdown
         if (plugin.getConfig().getBoolean("event.visible-during-countdown", false)) {
@@ -145,7 +140,6 @@ public class BossEvent {
         isStarting = false;
         isRunning = true;
         playerHits.clear();
-        totalHitsDealt = 0; // Reset del contatore dei colpi totali
 
         // Se il boss è già visibile (durante il countdown), aggiornalo per renderlo attaccabile
         if (boss != null && !boss.isDead()) {
@@ -204,7 +198,6 @@ public class BossEvent {
         plugin.getScoreboardManager().removeAllScoreboards();
 
         playerHits.clear();
-        totalHitsDealt = 0; // Reset del contatore dei colpi totali
     }
 
     public void cancelCountdown() {
@@ -239,14 +232,6 @@ public class BossEvent {
         playerHits.put(playerUUID, hits);
 
         bossHealth--;
-        totalHitsDealt++; // Incrementa il contatore totale dei colpi
-
-        // Verifica se il boss deve usare l'abilità knockback
-        if (bossAbility.shouldUseKnockbackAbility(totalHitsDealt)) {
-            // Esegui l'abilità knockback
-            double radius = plugin.getConfig().getDouble("event.boss.abilities.knockback.radius", 10.0);
-            bossAbility.executeKnockbackAbility(boss.getLocation(), radius);
-        }
 
         // Aggiornare il nome del boss con la nuova vita
         String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
@@ -365,15 +350,5 @@ public class BossEvent {
 
     public int getBossHealth() {
         return bossHealth;
-    }
-
-    // Nuovo metodo per ottenere il contatore totale dei colpi
-    public int getTotalHitsDealt() {
-        return totalHitsDealt;
-    }
-
-    // Nuovo metodo per ottenere l'oggetto delle abilità del boss
-    public BossAbility getBossAbility() {
-        return bossAbility;
     }
 }

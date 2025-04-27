@@ -30,26 +30,6 @@ event:
     # Formato del display del nome (con vita)
     display-format: "&c&l%name% &7| &eVita: &a%health%"
 
-    # Configurazione delle abilità del boss
-    abilities:
-      # Abilità knockback - respinge i giocatori nell'area
-      knockback:
-        # Ogni quanti colpi attivare l'abilità (imposta a 0 per disabilitare)
-        interval: 10
-        # Forza del knockback (valore più alto = spinta maggiore)
-        strength: 2.0
-        # Raggio entro cui i giocatori vengono colpiti
-        radius: 10.0
-        # Suono da riprodurre quando l'abilità viene usata
-        # Lista dei suoni disponibili: https://helpch.at/docs/1.8/org/bukkit/Sound.html
-        sound: "ENDERDRAGON_GROWL"
-        # Volume del suono (da 0.0 a 1.0)
-        volume: 1.0
-        # Pitch del suono (da 0.5 a 2.0)
-        pitch: 1.0
-        # Messaggio da inviare ai giocatori quando l'abilità viene usata
-        message: "&c&l✩ &7Il boss ha usato l'abilità &e&lONDA D'URTO&7!"
-
 # Configurazione delle scoreboard
 scoreboard:
   # Configurazione della scoreboard del countdown
