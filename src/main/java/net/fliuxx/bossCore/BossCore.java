@@ -95,6 +95,7 @@ public class BossCore extends JavaPlugin {
 
         // Configurazione abilità PushBack
         if (!getConfig().isSet("abilities.pushback.enabled")) {
+            getConfig().set("abilities.max-detection-range", 20.0);
             getConfig().set("abilities.pushback.enabled", true);
             getConfig().set("abilities.pushback.trigger-hits", 10);
             getConfig().set("abilities.pushback.range", 5.0);
@@ -102,7 +103,6 @@ public class BossCore extends JavaPlugin {
             getConfig().set("abilities.pushback.power-vertical", 0.5);
             getConfig().set("abilities.pushback.sound", "EXPLODE");
             getConfig().set("abilities.pushback.message", "&c&lIl boss respinge tutti i giocatori!");
-            getConfig().set("abilities.max-detection-range", 20.0);
         }
 
         // Configurazione descrizione premi

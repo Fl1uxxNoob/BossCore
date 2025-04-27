@@ -12,20 +12,23 @@ import java.util.List;
 public class AbilityManager {
     private final BossCore plugin;
     private final List<BossAbility> abilities = new ArrayList<>();
+    private PushBackAbility pushBackAbility; // Riferimento diretto all'abilità PushBack
     private BukkitTask checkTask;
 
     public AbilityManager(BossCore plugin) {
         this.plugin = plugin;
-
-        // Registra le abilità disponibili
         registerAbilities();
     }
 
     private void registerAbilities() {
-        // Registra l'abilità PushBack
-        abilities.add(new PushBackAbility(plugin));
+        pushBackAbility = new PushBackAbility(plugin);
+        abilities.add(pushBackAbility);
+    }
 
-        // In futuro, altre abilità possono essere aggiunte qui
+    public void incrementPushBackHitCounter() {
+        if (pushBackAbility != null) {
+            pushBackAbility.incrementHitCounter();
+        }
     }
 
     public void startAbilityChecks() {
@@ -33,7 +36,6 @@ public class AbilityManager {
             checkTask.cancel();
         }
 
-        // Reset di tutte le abilità
         abilities.forEach(BossAbility::reset);
 
         checkTask = new BukkitRunnable() {
@@ -47,14 +49,13 @@ public class AbilityManager {
                 IronGolem boss = plugin.getBossEvent().getBoss();
                 List<Player> nearbyPlayers = getNearbyPlayers(boss);
 
-                // Controlla e attiva le abilità che sono pronte
                 for (BossAbility ability : abilities) {
                     if (ability.isEnabled() && ability.canActivate()) {
                         ability.activate(boss, nearbyPlayers);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 1, 1); // Controlla ogni tick
+        }.runTaskTimer(plugin, 1, 1);
     }
 
     public void stopAbilityChecks() {
@@ -63,7 +64,6 @@ public class AbilityManager {
             checkTask = null;
         }
 
-        // Reset di tutte le abilità
         abilities.forEach(BossAbility::reset);
     }
 

@@ -1,9 +1,9 @@
 name: BossCore
-version: 1.5.2
+version: 1.6
 main: net.fliuxx.bossCore.BossCore
 api-version: 1.8
 author: Fl1uxxNoob
-description: Vince chi colpisce più volte il boss!
+description: BossCore is a feature-rich Minecraft Spigot plugin that allows players to engage in an exciting boss battle event. Players will compete to hit the boss the most times and the one with the highest number of hits at the end of the event wins amazing prizes!
 commands:
   bosscore:
     description: Comando principale di BossCore

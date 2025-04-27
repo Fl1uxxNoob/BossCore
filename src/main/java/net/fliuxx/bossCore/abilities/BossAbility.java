@@ -26,7 +26,7 @@ public interface BossAbility {
     boolean isEnabled();
 
     /**
-     * Resetta lo stato dell'abilità (ad esempio dopo l'uso)
+     * Resetta lo stato dell'abilità
      */
     void reset();
 }

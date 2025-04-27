@@ -309,6 +309,9 @@ public class BossEvent {
 
         bossHealth--;
 
+        // Incrementa il contatore dell'abilità PushBack
+        plugin.getAbilityManager().incrementPushBackHitCounter();
+
         String bossName = plugin.getConfig().getString("event.boss.name", "&c&lBoss &f&lEvent");
         String displayFormat = plugin.getConfig().getString("event.boss.display-format", "&c&l%name% &7| &eVita: &a%health%");
 

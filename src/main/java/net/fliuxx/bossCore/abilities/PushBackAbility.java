@@ -19,21 +19,24 @@ public class PushBackAbility implements BossAbility {
 
     @Override
     public boolean canActivate() {
-        // Se non è abilitata, non può essere attivata
         if (!isEnabled()) {
             return false;
         }
 
         int requiredHits = plugin.getConfig().getInt("abilities.pushback.trigger-hits", 10);
-        hitCounter++;
 
-        // Attiva quando il contatore raggiunge il valore configurato
         if (hitCounter >= requiredHits) {
-            hitCounter = 0; // Reset del contatore
+            hitCounter = 0;
             return true;
         }
 
         return false;
+    }
+
+    public void incrementHitCounter() {
+        if (isEnabled()) {
+            hitCounter++;
+        }
     }
 
     @Override
@@ -48,42 +51,35 @@ public class PushBackAbility implements BossAbility {
         String soundName = plugin.getConfig().getString("abilities.pushback.sound", "ENTITY_GENERIC_EXPLODE");
         String message = plugin.getConfig().getString("abilities.pushback.message", "&c&lIl boss respinge tutti i giocatori!");
 
-        // Filtra i giocatori nel range
         List<Player> affectedPlayers = nearbyPlayers.stream()
                 .filter(player -> player.getLocation().distance(boss.getLocation()) <= range)
                 .toList();
 
-        // Se non ci sono giocatori nel range, non fare nulla
         if (affectedPlayers.isEmpty()) {
             return;
         }
 
-        // Applica il knockback a tutti i giocatori nel range
         for (Player player : affectedPlayers) {
-            // Calcola la direzione del respingimento (allontana dal boss)
             Vector direction = player.getLocation().toVector().subtract(boss.getLocation().toVector());
 
             if (direction.length() > 0) {
                 direction = direction.normalize();
                 direction.setX(direction.getX() * powerXZ);
                 direction.setZ(direction.getZ() * powerXZ);
-                direction.setY(powerY); // Componente verticale fissa
+                direction.setY(powerY);
 
                 player.setVelocity(direction);
             }
 
-            // Riproduci il suono per il giocatore
             try {
                 Sound sound = Sound.valueOf(soundName);
                 player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Suono non valido nella configurazione: " + soundName);
-                // Usa un suono di fallback
                 player.playSound(player.getLocation(), Sound.EXPLODE, 1.0f, 1.0f);
             }
         }
 
-        // Invia il messaggio a tutti i giocatori
         if (message != null && !message.isEmpty()) {
             String coloredMessage = ChatColor.translateAlternateColorCodes('&', message);
             for (Player player : nearbyPlayers) {
